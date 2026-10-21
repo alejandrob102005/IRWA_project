@@ -1,75 +1,49 @@
 import json
-import string
 import re
 import nltk
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 
-nltk.download('punkt')
 nltk.download('stopwords')
 
 class TextPreprocessor:
+
     def __init__(self):
         self.stop_words = set(stopwords.words('english'))
         self.stemmer = PorterStemmer()
 
-    def preprocess_text(self, text: str) -> list:
-        
-        if not text or not isinstance(text, str):
+    def preprocess_text(self, text):
+        # some docs may have no title/description
+        if not isinstance(text, str) or not text:
             return []
 
-        # Lowercasing
-        text = text.lower()
-
-        # Replace punctuation with spaces and clean non-alphanumeric characters
-        text = re.sub(r'[^a-z0-9\s]', ' ', text)
-
-        # Tokenization
-        tokens = word_tokenize(text)
-
-        # Remove stop words and short tokens, and apply stemming
-        cleaned_tokens = [
-            self.stemmer.stem(token)
-            for token in tokens
-            if token not in self.stop_words and len(token) > 1
-        ]
-
-        return cleaned_tokens
-
-    def process_document(self, doc: dict) -> dict:
+        text = re.sub(r'[^a-z0-9\s]', ' ', text.lower())
         
-        processed_doc = doc.copy()
-        
-        # We only preprocess the text fields: title and description
-        processed_doc['processed_title'] = self.preprocess_text(doc.get('title', ''))
-        processed_doc['processed_description'] = self.preprocess_text(doc.get('description', ''))
-        
-        return processed_doc
+        tokens = text.split()
+
+        # we don't want 1-character tokens
+        return [self.stemmer.stem(t) for t in tokens
+                if t not in self.stop_words and len(t) > 1]
+
+    def process_document(self, doc):
+        # copy so we don't modify the original dict
+        new_doc = doc.copy()
+        #only title and description are text fields we need 
+        new_doc['processed_title'] = self.preprocess_text(doc.get('title'))
+        new_doc['processed_description'] = self.preprocess_text(doc.get('description'))
+        return new_doc
 
 
-
-def load_and_preprocess_dataset(input_filepath: str, output_filepath: str = None):
-    
+def load_and_preprocess_dataset(input_path, output_path):
     preprocessor = TextPreprocessor()
 
-    with open(input_filepath, 'r', encoding='utf-8') as f:
+    with open(input_path, encoding='utf-8') as f:
         data = json.load(f)
 
-    processed_data = [preprocessor.process_document(doc) for doc in data]
+    processed = [preprocessor.process_document(d) for d in data]
 
-    if output_filepath:
-        with open(output_filepath, 'w', encoding='utf-8') as f:
-            json.dump(processed_data, f, indent=2, ensure_ascii=False)
-        print(f"Preprocessed dataset successfully saved to: {output_filepath}")
-
-    return processed_data
-
-if __name__ == "__main__":
-    # default file paths
-    input_file = "Data/fashion_products_dataset.json"
-    output_file = "Data/processed_fashion_products.json"
-    
-    processed_dataset = load_and_preprocess_dataset(input_file, output_file)
-    print(f"Successfully processed {len(processed_dataset)} documents.")
-    
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(processed, f, indent=2, ensure_ascii=False)
+        
+    return processed
