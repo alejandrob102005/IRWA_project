@@ -25,22 +25,22 @@ class TextPreprocessor:
         return [self.stemmer.stem(t) for t in tokens
                 if t not in self.stop_words and len(t) > 1]
 
-    def process_document(self, doc):
+    def process_document(self, doc,output_fields):
         # copy so we don't modify the original dict
-        new_doc = doc.copy()
+        new_doc = {k:v for k,v in doc.items() if k in output_fields} 
         #only title and description are text fields we need 
         new_doc['processed_title'] = self.preprocess_text(doc.get('title'))
         new_doc['processed_description'] = self.preprocess_text(doc.get('description'))
         return new_doc
 
 
-def load_and_preprocess_dataset(input_path, output_path):
+def load_and_preprocess_dataset(input_path, output_path, output_fields):
     preprocessor = TextPreprocessor()
 
     with open(input_path, encoding='utf-8') as f:
         data = json.load(f)
 
-    processed = [preprocessor.process_document(d) for d in data]
+    processed = [preprocessor.process_document(d, output_fields) for d in data]
 
     if output_path:
         with open(output_path, 'w', encoding='utf-8') as f:
