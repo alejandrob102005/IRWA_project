@@ -4,7 +4,20 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
+
 nltk.download('stopwords')
+
+def flatten_product_details(details):
+    if not details:
+        return ''
+
+    values = []
+    for item in details:
+        for key, value in item.items():
+            if key != 'Style Code':
+                values.append(str(value))
+
+    return ' '.join(values)
 
 class TextPreprocessor:
 
@@ -25,14 +38,21 @@ class TextPreprocessor:
         return [self.stemmer.stem(t) for t in tokens
                 if t not in self.stop_words and len(t) > 1]
 
-    def process_document(self, doc,output_fields):
-        # copy so we don't modify the original dict
-        new_doc = {k:v for k,v in doc.items() if k in output_fields} 
-        #only title and description are text fields we need 
+    def process_document(self, doc, output_fields):
+        # keep only the fields we need to return in the results
+        new_doc = {k: v for k, v in doc.items() if k in output_fields}
+
         new_doc['processed_title'] = self.preprocess_text(doc.get('title'))
         new_doc['processed_description'] = self.preprocess_text(doc.get('description'))
-        return new_doc
+        # brand, sub_category and product details are joined as extra text for searching
+        brand = doc.get('brand')
+        sub_category = doc.get('sub_category')
+        details = flatten_product_details(doc.get('product_details'))
 
+        metadata = brand + ' ' + sub_category + ' ' + details
+        new_doc['processed_metadata'] = self.preprocess_text(metadata)
+
+        return new_doc
 
 def load_and_preprocess_dataset(input_path, output_path, output_fields):
     preprocessor = TextPreprocessor()
