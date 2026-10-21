@@ -3,6 +3,21 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
+import re
+
+def parse_number(value):
+    if value is None:
+        return None
+
+    cleaned = re.sub(r"[^\d.]", "", str(value))
+    return float(cleaned) if cleaned else None
+
+def parse_discount(value):
+    if value is None:
+        return None
+
+    match = re.search(r"\d+(?:\.\d+)?", str(value))
+    return float(match.group()) if match else None
 
 
 nltk.download('stopwords')
@@ -44,6 +59,11 @@ class TextPreprocessor:
 
         new_doc['processed_title'] = self.preprocess_text(doc.get('title'))
         new_doc['processed_description'] = self.preprocess_text(doc.get('description'))
+        new_doc["is_available"] = not doc.get("out_of_stock", False)
+        new_doc["selling_price_value"] = parse_number(doc.get("selling_price"))
+        new_doc["actual_price_value"] = parse_number(doc.get("actual_price"))
+        new_doc["discount_percent"] = parse_discount(doc.get("discount"))
+        new_doc["average_rating_value"] = parse_number(doc.get("average_rating"))
         # brand, sub_category and product details are joined as extra text for searching
         brand = doc.get('brand')
         sub_category = doc.get('sub_category')

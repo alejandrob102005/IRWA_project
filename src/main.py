@@ -2,7 +2,7 @@ from pathlib import Path
 
 from preprocess import load_and_preprocess_dataset
 
-DATA_DIR = Path(__file__).parents[1] / 'Data'
+DATA_DIR = Path(__file__).parents[1] / 'data'
 INPUT_PATH = DATA_DIR / 'fashion_products_dataset.json'
 OUTPUT_PATH = DATA_DIR / 'processed_fashion_products.json'
 
