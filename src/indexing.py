@@ -90,7 +90,6 @@ def get_term_statistics(docs, index, text_fields):
 
 
 def build_tfidf_index(docs, text_fields):
-    
     index = defaultdict(list)
     tf = defaultdict(list)
     df = defaultdict(int)
@@ -106,29 +105,24 @@ def build_tfidf_index(docs, text_fields):
         terms = get_doc_terms(doc, text_fields)
 
         # count how many times each term appears in this document
-        # (this is what we need for the tf, so we don't need the positions)
-        term_counts = {}
-        for term in terms:
-            if term not in term_counts:
-                term_counts[term] = 0
-            term_counts[term] += 1
+        term_counts = Counter(terms)
 
-        # norm of the document = sqrt(sum of (raw count)^2)
-        norm = 0
-        for term in term_counts:
-            norm += term_counts[term] ** 2
-        norm = math.sqrt(norm)
+        # we calculate sublinear TF: tf = 1 + log2(f)
+        tf_sublinear = {}
+        for term, count in term_counts.items():
+            tf_sublinear[term] = 1 + math.log2(count)
 
-        for term in term_counts:
+        # we calculate document norm
+        norm = math.sqrt(sum(w ** 2 for w in tf_sublinear.values()))
+
+        for term, sublinear_weight in tf_sublinear.items():
             index[term].append(product_id)
-            # normalized term frequency of the term in this document
-            tf[term].append(np.round(term_counts[term] / norm, 4))
-            # the term appears in one more document
+            tf[term].append(np.round(sublinear_weight / norm, 4))
             df[term] += 1
 
-    # idf of each term
+    # we calculate base-2 IDF
     for term in df:
-        idf[term] = np.round(math.log(N / df[term]), 4)
+        idf[term] = np.round(math.log2(N / df[term]), 4)
 
     return index, tf, df, idf, product_id_info
 
@@ -142,10 +136,8 @@ def rank_documents(query_terms, docs, index, tf, idf):
 
     # query vector -> tf of the term in the query * idf
     query_counts = Counter(query_terms)
-    query_norm = 0
-    for term in query_counts:
-        query_norm += query_counts[term] ** 2
-    query_norm = math.sqrt(query_norm)
+    query_weights = {term: 1 + math.log2(count) for term, count in query_counts.items()}
+    query_norm = math.sqrt(sum(w ** 2 for w in query_weights.values()))
 
     query_vector = [0] * len(unique_terms)
     # each document has a vector with one position per query term, we do this as in the lab
@@ -156,7 +148,7 @@ def rank_documents(query_terms, docs, index, tf, idf):
         if term not in index:
             continue
 
-        query_vector[i] = (query_counts[term] / query_norm) * idf[term]
+        query_vector[i] = (query_weights[term] / query_norm) * idf[term]
 
         # go through the posting list of the term and fill the vectors of the
         # documents that we want to rank
