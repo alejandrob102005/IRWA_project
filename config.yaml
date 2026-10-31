@@ -1,0 +1,40 @@
+
+paths:
+  data_dir: data
+  raw_dataset: fashion_products_dataset.json
+  processed_dataset: processed_fashion_products.json
+
+preprocessing:
+  # fields of the original dataset that we keep in the processed file
+  output_fields:
+    - pid
+    - title
+    - description
+    - brand
+    - category
+    - sub_category
+    - product_details
+    - seller
+    - out_of_stock
+    - selling_price
+    - discount
+    - actual_price
+    - average_rating
+    - url
+
+indexing:
+  # processed fields that are joined to build the index
+  text_fields:
+    - processed_title
+    - processed_description
+    - processed_metadata
+
+search:
+  # number of results printed for each query
+  top_k: 10
+  
+    - women cotton printed kurta
+    - men black leather jacket
+    - men slim fit formal checkered shirt
+    - women hooded winter sweatshirt
+    - cotton ankle socks pack
