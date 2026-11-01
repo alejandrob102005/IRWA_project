@@ -1,4 +1,5 @@
 import numpy as np
+from indexing import search_tfidf
 
 # P@K
 def precision_at_k(doc_score, k):
@@ -106,27 +107,31 @@ def evaluate_query(retrieved_relevance, total_relevant, k=10):
     }
 
 
-def evaluate_system(queries_results, k=10):
-    
-    per_query_metrics = {}
+def evaluate_system(queries, labels_df, index, tf, idf, preprocessor, k=10):
+    query_metrics = []
     ap_list = []
     rr_list = []
 
-    for query_id, data in queries_results.items():
-        retrieved_rel = data['retrieved_relevance']
-        total_rel = data['total_relevant']
+    for q_idx, query_text in enumerate(queries, start=1):
+        ranked_results = search_tfidf(query_text, preprocessor, index, tf, idf)
 
-        metrics = evaluate_query(retrieved_rel, total_rel, k=k)
-        per_query_metrics[query_id] = metrics
+        query_labels = labels_df[labels_df['query_id'] == q_idx]
+        rel_map = dict(zip(query_labels['pid'], query_labels['labels']))
+        total_relevant = int((query_labels['labels'] == 1).sum())
+
+        retrieved_relevance = [rel_map.get(pid, 0) for score, pid in ranked_results]
+
+        metrics = evaluate_query(retrieved_relevance, total_relevant, k=k)
 
         ap_list.append(metrics["AP@K"])
         rr_list.append(metrics["RR@K"])
+        query_metrics.append((q_idx, query_text, metrics))
 
     map_score = round(mean_average_precision(ap_list), 3)
     mrr_score = round(mean_reciprocal_rank(rr_list), 3)
 
     return {
-        "per_query": per_query_metrics,
+        "query_metrics": query_metrics,
         "MAP": map_score,
         "MRR": mrr_score
     }

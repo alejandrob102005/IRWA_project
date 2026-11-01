@@ -1,10 +1,11 @@
 import json
 from pathlib import Path
-
+import pandas as pd
 import yaml
 
 from preprocess import load_and_preprocess_dataset, TextPreprocessor
 from indexing import build_tfidf_index, search_tfidf
+from evaluation import evaluate_system
 
 ROOT_DIR = Path(__file__).parents[1]
 CONFIG_PATH = ROOT_DIR / 'config.yaml'
@@ -37,7 +38,7 @@ def main():
     else:
         docs = load_and_preprocess_dataset(input_path, output_path, output_fields=output_fields)
 
-    # ---- part 2: indexing ----
+    # ---- part 2.1: indexing ----
     index, tf, df, idf, pid_info = build_tfidf_index(docs, text_fields)
 
     print('Number of documents:', len(docs))
@@ -57,6 +58,33 @@ def main():
             title = pid_info[pid]['title']
             print(position + 1, round(score, 3), pid, title)
 
+    # ---- part 2.2: evaluation ----
+    labels_path = data_dir / config['paths']['validation_labels']
+    val_df = pd.read_csv(labels_path)
+
+    val_queries = config['evaluation']['validation_queries']
+
+    results = evaluate_system(
+        queries=val_queries,
+        labels_df=val_df,
+        index=index,
+        tf=tf,
+        idf=idf,
+        preprocessor=preprocessor,
+        k=top_k
+    )
+
+    for q_idx, query_text, metrics in results['query_metrics']:
+        print(f"a. Query {q_idx}: {query_text}")
+        print(f"P@{top_k}: {metrics['P@K']:.3f}")
+        print(f"R@{top_k}: {metrics['R@K']:.3f}")
+        print(f"F1@{top_k}: {metrics['F1@K']:.3f}")
+        print(f"AP@{top_k}: {metrics['AP@K']:.3f}")
+        print(f"RR@{top_k}: {metrics['RR@K']:.3f}")
+        print(f"NDCG@{top_k}: {metrics['NDCG@K']:.3f}\n")
+
+    print(f"MAP: {results['MAP']:.3f}")
+    print(f"MRR: {results['MRR']:.3f}")
 
 if __name__ == '__main__':
     main()
