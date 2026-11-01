@@ -28,20 +28,25 @@ def f1_score_at_k(doc_score, k, total_relevant):
     return float(2 * (p_k * r_k) / (p_k + r_k))
 
 # Average Precision@K
-def average_precision_at_k(doc_score, k, total_relevant):
-    
-    if total_relevant == 0 or k <= 0:
+def average_precision_at_k(doc_score, k):
+
+    if k <= 0:
         return 0.0
 
     top_k_scores = doc_score[:k]
     score_sum = 0.0
+    relevant_found = 0
 
     for i, rel in enumerate(top_k_scores):
         if rel == 1:
-            
+            relevant_found += 1
             score_sum += precision_at_k(top_k_scores, i + 1)
 
-    return float(score_sum / total_relevant)
+    # we divide by the number of relevant documents found in the top k
+    # (if there is none, AP is 0)
+    if relevant_found == 0:
+        return 0.0
+    return float(score_sum / relevant_found)
 
 # MAP
 def mean_average_precision(all_ap_scores):
@@ -87,13 +92,15 @@ def ndcg_at_k(doc_score, k, ideal_doc_score):
 
 
 def evaluate_query(retrieved_relevance, total_relevant, k=10):
-    
-    ideal_relevance = sorted(retrieved_relevance, reverse=True)
+
+    # the ideal ranking has ALL the relevant documents of the ground truth first,
+    # not only the ones that our system has retrieved
+    ideal_relevance = [1] * total_relevant
 
     p_k = precision_at_k(retrieved_relevance, k)
     r_k = recall_at_k(retrieved_relevance, k, total_relevant)
     f1_k = f1_score_at_k(retrieved_relevance, k, total_relevant)
-    ap_k = average_precision_at_k(retrieved_relevance, k, total_relevant)
+    ap_k = average_precision_at_k(retrieved_relevance, k)
     rr_k = reciprocal_rank(retrieved_relevance, k)
     ndcg_k = ndcg_at_k(retrieved_relevance, k, ideal_relevance)
 
@@ -119,7 +126,13 @@ def evaluate_system(queries, labels_df, index, tf, idf, preprocessor, k=10):
         rel_map = dict(zip(query_labels['pid'], query_labels['labels']))
         total_relevant = int((query_labels['labels'] == 1).sum())
 
-        retrieved_relevance = [rel_map.get(pid, 0) for score, pid in ranked_results]
+        # we only evaluate the documents that have a label in the csv:
+        # the ones without a label are removed from the ranking (we don't know if
+        # they are relevant or not), and the order of the rest is kept
+        retrieved_relevance = []
+        for score, pid in ranked_results:
+            if pid in rel_map:
+                retrieved_relevance.append(rel_map[pid])
 
         metrics = evaluate_query(retrieved_relevance, total_relevant, k=k)
 
