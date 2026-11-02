@@ -1,8 +1,9 @@
-
 paths:
   data_dir: data
   raw_dataset: fashion_products_dataset.json
   processed_dataset: processed_fashion_products.json
+  validation_labels: validation_labels.csv 
+  validation2_labels: validation2_labels.csv
 
 preprocessing:
   # fields of the original dataset that we keep in the processed file

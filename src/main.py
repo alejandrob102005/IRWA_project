@@ -58,7 +58,7 @@ def main():
             title = pid_info[pid]['title']
             print(position + 1, round(score, 3), pid, title)
 
-    # ---- part 2.2: evaluation ----
+    # ---- part 2.2: evaluation ---- 
     labels_path = data_dir / config['paths']['validation_labels']
     val_df = pd.read_csv(labels_path)
 
@@ -75,7 +75,37 @@ def main():
     )
 
     for q_idx, query_text, metrics in results['query_metrics']:
-        print(f"a. Query {q_idx}: {query_text}")
+        print(f"* Query {q_idx}: {query_text}")
+        print(f"P@{top_k}: {metrics['P@K']:.3f}")
+        print(f"R@{top_k}: {metrics['R@K']:.3f}")
+        print(f"F1@{top_k}: {metrics['F1@K']:.3f}")
+        print(f"AP@{top_k}: {metrics['AP@K']:.3f}")
+        print(f"RR@{top_k}: {metrics['RR@K']:.3f}")
+        print(f"NDCG@{top_k}: {metrics['NDCG@K']:.3f}\n")
+
+    print(f"MAP: {results['MAP']:.3f}")
+    print(f"MRR: {results['MRR']:.3f}")
+    
+    # ---- part 2.3: evaluation own search queries---- 
+    print(f"EVALUATION Test Queries")
+
+    labels_path = data_dir / config['paths']['validation2_labels']
+    val_df = pd.read_csv(labels_path)
+
+    val_queries = config['search']['test_queries']
+
+    results = evaluate_system(
+        queries=val_queries,
+        labels_df=val_df,
+        index=index,
+        tf=tf,
+        idf=idf,
+        preprocessor=preprocessor,
+        k=top_k
+    )
+
+    for q_idx, query_text, metrics in results['query_metrics']:
+        print(f"* Query {q_idx}: {query_text}")
         print(f"P@{top_k}: {metrics['P@K']:.3f}")
         print(f"R@{top_k}: {metrics['R@K']:.3f}")
         print(f"F1@{top_k}: {metrics['F1@K']:.3f}")
