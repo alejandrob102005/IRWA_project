@@ -34,20 +34,20 @@ def main():
     # used to preprocess the queries in the same way as the documents
     preprocessor = TextPreprocessor()
 
-    # ---- part 1: preprocessing (only if we don't have the processed file yet) ----
+    #part 1: preprocessing (only if we don't have the processed file yet)
     if output_path.exists():
         with open(output_path, encoding='utf-8') as f:
             docs = json.load(f)
     else:
         docs = load_and_preprocess_dataset(input_path, output_path, output_fields=output_fields)
 
-    # ---- part 2.1: indexing ----
+    # part 2.1: indexing
     index, tf, df, idf, pid_info = build_tfidf_index(docs, text_fields)
 
     print('Number of documents:', len(docs))
     print('Number of terms in the index:', len(index))
 
-    # ---- search + ranking of our test queries ----
+    # search + ranking of our test queries 
     for query in test_queries:
         ranked = search_tfidf(query, preprocessor, index, tf, idf)
 
@@ -61,7 +61,7 @@ def main():
             title = pid_info[pid]['title']
             print(position + 1, round(score, 3), pid, title)
 
-    # ---- part 2.2: evaluation ---- 
+    # part 2.2: evaluation 
     labels_path = data_dir / config['paths']['validation_labels']
     val_df = pd.read_csv(labels_path)
 
@@ -89,7 +89,7 @@ def main():
     print(f"MAP: {results['MAP']:.3f}")
     print(f"MRR: {results['MRR']:.3f}")
     
-    # ---- part 2.3: evaluation own search queries---- 
+    # part 2.3: evaluation own search queries
     print(f"EVALUATION Test Queries")
 
     labels_path = data_dir / config['paths']['validation2_labels']
