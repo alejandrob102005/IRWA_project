@@ -1,13 +1,16 @@
+import sys
 import json
 from pathlib import Path
 import pandas as pd
 import yaml
 
-from preprocess import load_and_preprocess_dataset, TextPreprocessor
-from indexing import build_tfidf_index, search_tfidf
-from evaluation import evaluate_system
+# root of the repository (project_progress/part_2 -> ../..), so we can import myapp
+ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT_DIR))
 
-ROOT_DIR = Path(__file__).parents[1]
+from project_progress.part_1.preprocess import TextPreprocessor, load_and_preprocess_dataset
+from indexing import build_tfidf_index,search_tfidf
+from evaluation import evaluate_system
 CONFIG_PATH = ROOT_DIR / 'config.yaml'
 
 
