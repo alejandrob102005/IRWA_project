@@ -61,7 +61,8 @@ def main():
             title = pid_info[pid]['title']
             print(position + 1, round(score, 3), pid, title)
 
-    # part 2.2: evaluation 
+    # part 2.2: evaluation
+    print(f"EVALUATION Validation Queries")
     labels_path = data_dir / config['paths']['validation_labels']
     val_df = pd.read_csv(labels_path)
 
